@@ -1,6 +1,7 @@
 from flask import Flask,request,jsonify,render_template
 import pandas as pd
 import pickle
+import os
 
 app=Flask(__name__)
 
@@ -31,21 +32,33 @@ def home():
 
     return render_template("index.html")
 
+EXPECTED_COLUMNS=["gestation","parity","age","height","weight","smoke"]
+
+
+#defining end point
+@app.route("/hello",methods=["GET"])
+def hello():
+    return "hello World!"    
+
 
 ##define Your endpoint here
 @app.route("/predict",methods=["POST"])
 def get_prediction():
     #get data From user
-    baby_data_form=request.form
+    #baby_data_form=request.form
+    baby_data_form=request.get_json()
 
     baby_data_cleaned = get_cleaned_data(baby_data_form)
 
 
     #convert into data frame
-    baby_df=pd.DataFrame(baby_data_cleaned) 
+    baby_df = pd.DataFrame(baby_data_cleaned)
+    baby_df = baby_df[EXPECTED_COLUMNS]
+
+    path = os.path.join(os.path.dirname(__file__), "model.pkl")
 
     #load machine learning trained model
-    with open("model.pkl","rb")as f: 
+    with open(path,"rb")as f: 
         mymodel=pickle.load(f)
     
 
@@ -55,10 +68,10 @@ def get_prediction():
     prediction=round(float(prediction[0]),2)
 
 
-
+#return response IN json format
     response={"Prediction":prediction}
-    return render_template("index.html",prediction=prediction)
-
+    #return render_template("index.html",prediction=prediction)
+    return response
 
 
 if __name__=="__main__":    
